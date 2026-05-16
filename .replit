@@ -1,0 +1,66 @@
+modules = ["nodejs-24"]
+
+[[artifacts]]
+id = "artifacts/api-server"
+
+[[artifacts]]
+id = "artifacts/mockup-sandbox"
+
+[deployment]
+router = "application"
+deploymentTarget = "autoscale"
+
+[deployment.postBuild]
+args = ["pnpm", "store", "prune"]
+env = { "CI" = "true" }
+
+[workflows]
+runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "artifacts/commercial-video: web"
+
+[[workflows.workflow]]
+name = "artifacts/commercial-video: web"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm --filter @workspace/commercial-video run dev"
+waitForPort = 3003
+
+[workflows.workflow.metadata]
+outputType = "webview"
+
+[agent]
+stack = "PNPM_WORKSPACE"
+expertMode = true
+integrations = ["revenuecat:1.0.0"]
+
+[postMerge]
+path = "scripts/post-merge.sh"
+timeoutMs = 20000
+
+[nix]
+channel = "stable-25_05"
+packages = ["zip"]
+
+[userenv]
+
+[userenv.shared]
+EXPO_PUBLIC_REVENUECAT_TEST_API_KEY = "test_ubELmdIgoOxyvoPIgNvwEBwkcRd"
+EXPO_PUBLIC_REVENUECAT_IOS_API_KEY = "appl_gdQCUAbVwUxBQNzTVXQyNjOEOSh"
+EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY = "goog_HFWccFVExlfEFlBGkkXcVcodrcN"
+REVENUECAT_PROJECT_ID = "proj7b4dc0bf"
+REVENUECAT_TEST_STORE_APP_ID = "appfac3cf410b"
+REVENUECAT_APPLE_APP_STORE_APP_ID = "app5c50785695"
+REVENUECAT_GOOGLE_PLAY_STORE_APP_ID = "appeadfce693f"
+
+[userenv.development]
+SPOTIFY_CALLBACK_HOST = "https://a358a1ee-256f-4bc2-bbc2-d9bb8c801f9d-00-2gbrcxlpkwxf.spock.replit.dev"

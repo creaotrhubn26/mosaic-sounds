@@ -1,0 +1,75 @@
+{
+  "expo": {
+    "name": "Mosaic Beats",
+    "slug": "mobile",
+    "version": "1.0.0",
+    "buildNumber": "1",
+    "versionCode": 1,
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "mosaicbeats",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0F0708"
+    },
+    "ios": {
+      "bundleIdentifier": "com.mosaicbeats.app",
+      "buildNumber": "1",
+      "supportsTablet": false,
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "Mosaic Beats uses the microphone for BPM detection from audio.",
+        "NSCameraUsageDescription": "Mosaic Beats uses the camera to scan QR codes.",
+        "NSPhotoLibraryUsageDescription": "Mosaic Beats saves playlist cards to your photo library.",
+        "UIBackgroundModes": ["audio", "fetch", "remote-notification"]
+      }
+    },
+    "android": {
+      "package": "com.mosaicbeats.app",
+      "versionCode": 1,
+      "backgroundColor": "#0F0708",
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.VIBRATE",
+        "android.permission.USE_FULL_SCREEN_INTENT"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/images/icon.png"
+    },
+    "plugins": [
+      [
+        "expo-router",
+        {
+          "origin": "https://replit.com/"
+        }
+      ],
+      "expo-font",
+      "expo-web-browser",
+      "@react-native-community/datetimepicker",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#C8102E",
+          "sounds": []
+        }
+      ]
+    ],
+    "extra": {
+      "privacyPolicyUrl": "https://mosaicbeats.app/privacy",
+      "termsUrl": "https://mosaicbeats.app/terms",
+      "supportEmail": "support@mosaicbeats.app"
+    },
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    }
+  }
+}

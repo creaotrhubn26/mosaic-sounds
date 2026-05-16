@@ -1,0 +1,265 @@
+openapi: 3.1.0
+info:
+  title: Api
+  version: 0.1.0
+  description: Music Match for Weddings API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: songs
+    description: Song recommendations
+  - name: sets
+    description: User setlists
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /songs/recommend:
+    get:
+      operationId: getSongRecommendations
+      tags: [songs]
+      summary: Get song recommendations
+      parameters:
+        - name: moment
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: cultures
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: languages
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: vibe
+          in: query
+          required: false
+          schema:
+            type: number
+        - name: energy
+          in: query
+          required: false
+          schema:
+            type: number
+        - name: cleanLyrics
+          in: query
+          required: false
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: Song recommendations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Song"
+  /sets:
+    get:
+      operationId: getUserSets
+      tags: [sets]
+      summary: Get all user sets
+      responses:
+        "200":
+          description: User sets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/WeddingSet"
+    post:
+      operationId: createSet
+      tags: [sets]
+      summary: Create a new set
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSetRequest"
+      responses:
+        "201":
+          description: Created set
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WeddingSet"
+  /sets/{id}:
+    get:
+      operationId: getSet
+      tags: [sets]
+      summary: Get a set by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Wedding set
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WeddingSet"
+    put:
+      operationId: updateSet
+      tags: [sets]
+      summary: Update a set
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSetRequest"
+      responses:
+        "200":
+          description: Updated set
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WeddingSet"
+    delete:
+      operationId: deleteSet
+      tags: [sets]
+      summary: Delete a set
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+    Song:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        artist:
+          type: string
+        youtubeVideoId:
+          type: string
+        energyScore:
+          type: number
+        dholScore:
+          type: number
+        danceability:
+          type: number
+        moments:
+          type: array
+          items:
+            type: string
+        cultureTags:
+          type: array
+          items:
+            type: string
+        languageTags:
+          type: array
+          items:
+            type: string
+        tags:
+          type: array
+          items:
+            type: string
+        familyFriendly:
+          type: boolean
+        bpmRange:
+          type: string
+      required:
+        - id
+        - title
+        - artist
+        - youtubeVideoId
+        - energyScore
+        - dholScore
+        - danceability
+        - moments
+        - cultureTags
+        - languageTags
+        - tags
+        - familyFriendly
+    WeddingSet:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        moment:
+          type: string
+        songs:
+          type: array
+          items:
+            $ref: "#/components/schemas/Song"
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - name
+        - moment
+        - songs
+        - createdAt
+        - updatedAt
+    CreateSetRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        moment:
+          type: string
+        songs:
+          type: array
+          items:
+            $ref: "#/components/schemas/Song"
+      required:
+        - name
+        - moment
+        - songs
+    UpdateSetRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        songs:
+          type: array
+          items:
+            $ref: "#/components/schemas/Song"

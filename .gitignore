@@ -1,0 +1,28 @@
+node_modules/
+.config/
+.cache/
+dist/
+build/
+.next/
+.vite/
+.DS_Store
+.env
+*.zip
+*.tar.gz
+*.mp4
+*.mov
+*.wav
+*.aiff
+.vercel
+.env*.local
+
+# Replit-specific local caches and skill registries — not source code
+.local
+.agents
+.expo
+.expo-shared
+*.tsbuildinfo
+
+# Generated codegen output (regenerated via pnpm --filter @workspace/api-spec codegen)
+lib/api-zod/src/generated
+lib/api-client-react/src/generated
