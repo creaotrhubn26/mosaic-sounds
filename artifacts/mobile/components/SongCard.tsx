@@ -20,6 +20,7 @@ import Animated2, {
 } from "react-native-reanimated";
 import { Song, getSongMeta, formatDuration } from "@/constants/data";
 import { useAlbumArt } from "@/lib/album-art";
+import { getYouTubeVideoId } from "@/lib/song-overrides";
 import { useApp } from "@/context/AppContext";
 import { usePlayback } from "@/context/PlaybackContext";
 import { useTheme, type AppTheme } from "@/context/ThemeContext";
@@ -181,7 +182,7 @@ export function SongCard({
 
   const openYouTube = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Linking.openURL(`https://www.youtube.com/watch?v=${song.youtubeVideoId}`);
+    Linking.openURL(`https://www.youtube.com/watch?v=${getYouTubeVideoId(song)}`);
   };
 
   const handlePreviewPress = async () => {
@@ -224,7 +225,7 @@ export function SongCard({
   const albumArtUri = useAlbumArt(song.artist, song.title);
   // Prefer the iTunes album cover (cached server-side, refetched here) and fall back to
   // YouTube's hqdefault if iTunes has nothing for this (artist, title).
-  const thumbnailUri = albumArtUri ?? `https://img.youtube.com/vi/${song.youtubeVideoId}/hqdefault.jpg`;
+  const thumbnailUri = albumArtUri ?? `https://img.youtube.com/vi/${getYouTubeVideoId(song)}/hqdefault.jpg`;
   const shouldLoadThumbnail = loadThumbnail && !thumbError;
   const thumbFallbackBg =
     song.energyScore >= 72 ? "#3D0A12" :

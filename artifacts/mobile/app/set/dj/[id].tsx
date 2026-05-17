@@ -22,6 +22,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { WEDDING_MOMENTS } from "@/constants/data";
 import { useApp } from "@/context/AppContext";
 import { usePlayback } from "@/context/PlaybackContext";
+import { getYouTubeVideoId } from "@/lib/song-overrides";
 import { EnergyBar } from "@/components/ui/EnergyBar";
 
 const BG = "#080304";
@@ -93,7 +94,7 @@ export default function DJModeScreen() {
 
   const openYouTube = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Linking.openURL(`https://www.youtube.com/watch?v=${song.youtubeVideoId}`);
+    Linking.openURL(`https://www.youtube.com/watch?v=${getYouTubeVideoId(song)}`);
   };
 
   const handlePreviewPlayback = async () => {

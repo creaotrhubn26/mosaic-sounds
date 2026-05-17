@@ -55,6 +55,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { WEDDING_MOMENTS, SONG_META } from "@/constants/data";
 import type { Song } from "@/constants/data";
 import { useApp } from "@/context/AppContext";
+import { getYouTubeVideoId } from "@/lib/song-overrides";
 import { usePlayback } from "@/context/PlaybackContext";
 import { useTheme, type AppTheme } from "@/context/ThemeContext";
 import {
@@ -349,7 +350,7 @@ export default function SetDetailScreen() {
         title: preferences.coupleNames ? `${preferences.coupleNames} — ${set.name}` : set.name,
         description: [`Moment: ${moment?.label ?? set.moment}`, "Created with Mosaic Beats"].join("\n"),
         privacyStatus: "unlisted",
-        videoIds: set.songs.map((song) => song.youtubeVideoId),
+        videoIds: set.songs.map((song) => getYouTubeVideoId(song)),
       }, getToken);
       setShowShareOptions(false);
       const failedCount = result.failedVideoIds.length;
@@ -399,12 +400,12 @@ export default function SetDetailScreen() {
 
   const handlePreviewPlayback = async (song: Song) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    if ((preferences.playbackMode ?? "preview_only") === "youtube") { handleOpenYouTube(song.youtubeVideoId); return; }
+    if ((preferences.playbackMode ?? "preview_only") === "youtube") { handleOpenYouTube(getYouTubeVideoId(song)); return; }
     const result = await toggleSongPlayback(song);
     if (!result.ok) {
       Alert.alert("Preview unavailable", result.reason, [
         { text: "Not now", style: "cancel" },
-        { text: "Open YouTube", onPress: () => handleOpenYouTube(song.youtubeVideoId) },
+        { text: "Open YouTube", onPress: () => handleOpenYouTube(getYouTubeVideoId(song)) },
       ]);
     }
   };
@@ -536,7 +537,7 @@ export default function SetDetailScreen() {
               color="#FFFFFF"
             />
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => handleOpenYouTube(song.youtubeVideoId)} style={styles.ytBtn} activeOpacity={0.8}>
+          <TouchableOpacity onPress={() => handleOpenYouTube(getYouTubeVideoId(song))} style={styles.ytBtn} activeOpacity={0.8}>
             <Feather name="youtube" size={14} color={theme.accent} />
           </TouchableOpacity>
           <TouchableOpacity

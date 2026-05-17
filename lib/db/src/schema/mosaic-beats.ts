@@ -104,6 +104,28 @@ export const songPreviewCacheTable = mosaicBeatsSchema.table(
   }),
 );
 
+// Per-song YouTube ID overrides. Populated by a daily cron that quota-bounded-searches
+// up to ~95 songs per run (YouTube Data API daily quota / 100-unit search cost).
+// `youtube_video_id` null = still needs to be fixed. `source` is the provenance:
+// 'bootstrap' (imported from data.ts), 'youtube_search' (cron filled it in), 'manual'.
+export const songYoutubeOverridesTable = mosaicBeatsSchema.table(
+  "song_youtube_overrides",
+  {
+    songId: text("song_id").primaryKey(),
+    title: text("title").notNull(),
+    artist: text("artist").notNull(),
+    originalYtId: text("original_yt_id").notNull(),
+    youtubeVideoId: text("youtube_video_id"),
+    matchedTitle: text("matched_title"),
+    matchedChannel: text("matched_channel"),
+    source: text("source").notNull(),
+    checkedAt: timestamp("checked_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    checkedAtIdx: index("song_youtube_overrides_checked_at_idx").on(table.checkedAt),
+  }),
+);
+
 export type ClientProfile = typeof clientProfilesTable.$inferSelect;
 export type InsertClientProfile = typeof clientProfilesTable.$inferInsert;
 export type AccountProfile = typeof accountProfilesTable.$inferSelect;
@@ -114,3 +136,5 @@ export type AlbumArtCache = typeof albumArtCacheTable.$inferSelect;
 export type InsertAlbumArtCache = typeof albumArtCacheTable.$inferInsert;
 export type SongPreviewCache = typeof songPreviewCacheTable.$inferSelect;
 export type InsertSongPreviewCache = typeof songPreviewCacheTable.$inferInsert;
+export type SongYoutubeOverride = typeof songYoutubeOverridesTable.$inferSelect;
+export type InsertSongYoutubeOverride = typeof songYoutubeOverridesTable.$inferInsert;

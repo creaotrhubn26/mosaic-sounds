@@ -21,6 +21,7 @@ import { ThemeProvider } from "@/context/ThemeContext";
 import { PlaybackProvider } from "@/context/PlaybackContext";
 import { warmSearchIndex } from "@/constants/searchIndex";
 import { clerkTokenCache } from "@/lib/clerk-token-cache";
+import { loadSongOverrides } from "@/lib/song-overrides";
 import { initializeRevenueCat, SubscriptionProvider } from "@/lib/revenuecat";
 
 const clerkPublishableKey =
@@ -85,6 +86,10 @@ export default function RootLayout() {
       // Pre-warm search index after first paint — O(101) work, done once
       InteractionManager.runAfterInteractions(() => {
         warmSearchIndex();
+        // Load YouTube ID overrides (corrects bad/placeholder IDs in the bundled
+        // catalog). Hits disk cache instantly, refreshes from server in the
+        // background if stale.
+        void loadSongOverrides();
       });
     }
   }, [fontsLoaded, fontError]);
