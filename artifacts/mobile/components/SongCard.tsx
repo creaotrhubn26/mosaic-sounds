@@ -343,26 +343,66 @@ export function SongCard({
           </View>
 
           <View style={styles.actions}>
-            <TouchableOpacity onPress={handleFlip} style={styles.iconBtn} activeOpacity={0.8}>
+            <TouchableOpacity
+              onPress={handleFlip}
+              style={styles.iconBtn}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel="Flip card to see details"
+            >
               <Feather name="rotate-cw" size={14} color={theme.muted} />
             </TouchableOpacity>
             {onMarkPlayed && (
-              <TouchableOpacity onPress={onMarkPlayed} style={styles.iconBtn} activeOpacity={0.8}>
+              <TouchableOpacity
+                onPress={onMarkPlayed}
+                style={styles.iconBtn}
+                activeOpacity={0.8}
+                accessibilityRole="button"
+                accessibilityLabel={isPlayed ? "Mark as unplayed" : "Mark as played"}
+                accessibilityState={{ selected: isPlayed }}
+              >
                 <Feather name="check-circle" size={16} color={isPlayed ? theme.gold : theme.muted} />
               </TouchableOpacity>
             )}
             {onLike && (
-              <TouchableOpacity onPress={handleLike} style={styles.iconBtn} activeOpacity={0.8}>
+              <TouchableOpacity
+                onPress={handleLike}
+                style={styles.iconBtn}
+                activeOpacity={0.8}
+                accessibilityRole="button"
+                accessibilityLabel={isLiked ? "Remove from likes" : "Add to likes"}
+                accessibilityState={{ selected: isLiked }}
+              >
                 <Feather name="heart" size={16} color={isLiked ? theme.accent : theme.muted} />
               </TouchableOpacity>
             )}
-            <TouchableOpacity onPress={handleAvoidToggle} style={styles.iconBtn} activeOpacity={0.8}>
+            <TouchableOpacity
+              onPress={handleAvoidToggle}
+              style={styles.iconBtn}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel={avoided ? "Remove from avoid list" : "Add to avoid list"}
+              accessibilityState={{ selected: avoided }}
+            >
               <Feather name="slash" size={14} color={avoided ? theme.accent : theme.muted} />
             </TouchableOpacity>
-            <TouchableOpacity onPress={handleRequestToggle} style={styles.iconBtn} activeOpacity={0.8}>
+            <TouchableOpacity
+              onPress={handleRequestToggle}
+              style={styles.iconBtn}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel={requested ? "Unmark request" : "Mark as guest request"}
+              accessibilityState={{ selected: requested }}
+            >
               <Feather name="star" size={14} color={requested ? theme.gold : theme.muted} />
             </TouchableOpacity>
-            <TouchableOpacity onPress={openYouTube} style={styles.iconBtn} activeOpacity={0.8}>
+            <TouchableOpacity
+              onPress={openYouTube}
+              style={styles.iconBtn}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel={`Open ${song.title} on YouTube`}
+            >
               <Feather name="youtube" size={16} color={theme.accent} />
             </TouchableOpacity>
             {onAdd && (

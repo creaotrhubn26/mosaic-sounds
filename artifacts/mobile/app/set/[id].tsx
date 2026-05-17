@@ -653,19 +653,38 @@ export default function SetDetailScreen() {
       <LinearGradient colors={[`${accentColor}20`, "transparent"]} style={[styles.headerBg, { height: 250 + topPad }]} />
 
       <View style={[styles.header, { paddingTop: topPad + 8 }]}>
-        <Pressable onPress={() => router.back()} style={styles.backBtn}>
+        <Pressable
+          onPress={() => router.back()}
+          style={styles.backBtn}
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+        >
           <Feather name="arrow-left" size={22} color={theme.text} />
         </Pressable>
         <View style={styles.headerActions}>
-          <Pressable onPress={() => setShowColorPicker(v => !v)} style={[styles.actionBtn, { borderColor: accentColor }]}>
+          <Pressable
+            onPress={() => setShowColorPicker(v => !v)}
+            style={[styles.actionBtn, { borderColor: accentColor }]}
+            accessibilityRole="button"
+            accessibilityLabel="Change set color"
+            accessibilityState={{ expanded: showColorPicker }}
+          >
             <View style={[styles.colorDot, { backgroundColor: accentColor }]} />
           </Pressable>
-          <Pressable onPress={() => router.push({ pathname: "/set/dj/[id]", params: { id: set.id } })} style={styles.actionBtn}>
+          <Pressable
+            onPress={() => router.push({ pathname: "/set/dj/[id]", params: { id: set.id } })}
+            style={styles.actionBtn}
+            accessibilityRole="button"
+            accessibilityLabel="Open DJ mode"
+          >
             <Feather name="monitor" size={18} color={theme.textSecondary} />
           </Pressable>
           <Pressable
             onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setEditMode(v => !v); }}
             style={[styles.actionBtn, editMode && styles.actionBtnActive]}
+            accessibilityRole="button"
+            accessibilityLabel={editMode ? "Exit edit mode" : "Edit set"}
+            accessibilityState={{ selected: editMode }}
           >
             <Feather name="edit-2" size={18} color={editMode ? "#FFFFFF" : theme.textSecondary} />
           </Pressable>
@@ -673,11 +692,19 @@ export default function SetDetailScreen() {
             <Pressable
               onPress={() => { setReorderData([...set.songs]); setShowReorderModal(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
               style={styles.actionBtn}
+              accessibilityRole="button"
+              accessibilityLabel="Reorder songs"
+              accessibilityHint="Opens a reorderable list; long-press the grip to drag"
             >
               <Feather name="menu" size={18} color={theme.textSecondary} />
             </Pressable>
           )}
-          <Pressable onPress={() => setShowShareOptions(true)} style={styles.actionBtn}>
+          <Pressable
+            onPress={() => setShowShareOptions(true)}
+            style={styles.actionBtn}
+            accessibilityRole="button"
+            accessibilityLabel="Share set"
+          >
             <Feather name="share-2" size={18} color={theme.textSecondary} />
           </Pressable>
         </View>
@@ -1021,6 +1048,9 @@ export default function SetDetailScreen() {
                         onLongPress={drag}
                         hitSlop={12}
                         activeOpacity={0.6}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Drag to reorder ${item.title}`}
+                        accessibilityHint="Long-press and drag up or down to change the song's position"
                         style={{
                           width: 36,
                           height: 36,

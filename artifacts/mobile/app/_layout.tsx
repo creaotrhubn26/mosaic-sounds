@@ -10,7 +10,22 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect } from "react";
-import { InteractionManager } from "react-native";
+import { InteractionManager, Text, TextInput } from "react-native";
+
+// Dynamic Type / accessibility font scaling.
+// - allowFontScaling=true (default) lets users scale text via OS settings.
+// - maxFontSizeMultiplier caps the largest scale so cards stay laid out.
+//   At 1.8x most existing layouts still fit; beyond that the UI breaks.
+// (Text and TextInput don't share defaultProps, so we set both.)
+type WithDefaults = { defaultProps?: Record<string, unknown> };
+const TextWithDefaults = Text as unknown as WithDefaults;
+const TextInputWithDefaults = TextInput as unknown as WithDefaults;
+TextWithDefaults.defaultProps = TextWithDefaults.defaultProps ?? {};
+TextWithDefaults.defaultProps.allowFontScaling = true;
+TextWithDefaults.defaultProps.maxFontSizeMultiplier = 1.8;
+TextInputWithDefaults.defaultProps = TextInputWithDefaults.defaultProps ?? {};
+TextInputWithDefaults.defaultProps.allowFontScaling = true;
+TextInputWithDefaults.defaultProps.maxFontSizeMultiplier = 1.8;
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ErrorBoundary } from "@/components/ErrorBoundary";

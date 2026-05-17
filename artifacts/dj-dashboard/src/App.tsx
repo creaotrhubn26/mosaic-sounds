@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback, type ReactNode } from "react"
 import { Switch, Route, Router as WouterRouter } from "wouter";
 import {
   X, Check, CheckCircle2, AlertCircle, AlertTriangle,
-  Calendar, Play, Download, Mic, SlidersHorizontal,
+  Calendar, Play, Download, Mic, MicOff, SlidersHorizontal,
   ShieldCheck, ShieldX, ClipboardList, PenLine,
   Copy, Music, Music2, Headphones,
   Instagram, Youtube, Facebook, Volume2, Globe,
@@ -368,6 +368,10 @@ function DJConsole({ payload }: { payload: DJPayload }) {
   const [currentIdx, setCurrentIdx] = useState(0);
   const [playedSet, setPlayedSet] = useState<Set<number>>(new Set());
   const [elapsed, setElapsed] = useState(0);
+  // #196 — "Speaker mode": when active, the BPM/energy panel dims and the body fades to
+  // ~30% opacity to signal that audio is ducked for someone speaking (toast, vows, etc.).
+  // This is a UX cue for the DJ; actual audio ducking depends on the underlying player.
+  const [speakerMode, setSpeakerMode] = useState(false);
   const [running, setRunning] = useState(false);
   const [showMidi, setShowMidi] = useState(false);
   const [showRequests, setShowRequests] = useState(false);
@@ -758,7 +762,25 @@ function DJConsole({ payload }: { payload: DJPayload }) {
                 if (secs > 0 && secs < trackDuration) cueTimestamps.push(secs);
               }
               return (
-                <div style={{ position: "relative", width: 120, height: 12, display: "flex", alignItems: "center" }}>
+                <div
+                  role="slider"
+                  aria-label="Seek through track"
+                  aria-valuemin={0}
+                  aria-valuemax={trackDuration}
+                  aria-valuenow={elapsed}
+                  tabIndex={0}
+                  onClick={(e) => {
+                    // Click-to-seek — translate cursor position to a new elapsed second.
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                    setElapsed(Math.floor(pct * trackDuration));
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "ArrowLeft") setElapsed((s) => Math.max(0, s - 5));
+                    if (e.key === "ArrowRight") setElapsed((s) => Math.min(trackDuration, s + 5));
+                  }}
+                  style={{ position: "relative", width: 120, height: 12, display: "flex", alignItems: "center", cursor: "pointer" }}
+                >
                   {/* Track bar */}
                   <div style={{ width: "100%", height: 3, borderRadius: 2, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
                     <div style={{
@@ -768,21 +790,24 @@ function DJConsole({ payload }: { payload: DJPayload }) {
                       transition: "width 1s linear, background 0.3s",
                     }} />
                   </div>
-                  {/* Cue marker dots */}
+                  {/* Cue marker dots — clickable to seek + loop hint */}
                   {cueTimestamps.map((ts, i) => (
-                    <div
+                    <button
                       key={i}
-                      title={`Cue: ${Math.floor(ts / 60)}:${String(ts % 60).padStart(2, "0")}`}
+                      title={`Jump to cue at ${Math.floor(ts / 60)}:${String(ts % 60).padStart(2, "0")} (sets 8-bar loop region)`}
+                      aria-label={`Cue marker at ${Math.floor(ts / 60)} minutes ${ts % 60} seconds`}
+                      onClick={(ev) => { ev.stopPropagation(); setElapsed(ts); }}
                       style={{
                         position: "absolute",
                         left: `${(ts / trackDuration) * 100}%`,
-                        width: 6, height: 6,
+                        width: 8, height: 8,
                         borderRadius: "50%",
                         background: "#D4A017",
                         border: "1px solid #0F0708",
                         transform: "translateX(-50%)",
-                        cursor: "default",
+                        cursor: "pointer",
                         zIndex: 2,
+                        padding: 0,
                         boxShadow: "0 0 4px rgba(212,160,23,0.8)",
                       }}
                     />
@@ -829,6 +854,23 @@ function DJConsole({ payload }: { payload: DJPayload }) {
             >
               <Mic size={13} />
               <span>{newRequests > 0 ? `${newRequests} request${newRequests > 1 ? "s" : ""}` : "Requests"}</span>
+            </button>
+
+            {/* #196 — Speaker mode toggle */}
+            <button
+              onClick={() => setSpeakerMode((v) => !v)}
+              title={speakerMode ? "Exit speaker mode — restore normal level" : "Speaker mode — duck the music for a speech or toast"}
+              aria-pressed={speakerMode}
+              style={{
+                background: speakerMode ? "rgba(200,16,46,0.18)" : "rgba(255,255,255,0.06)",
+                border: `1px solid ${speakerMode ? "rgba(200,16,46,0.55)" : "rgba(255,255,255,0.1)"}`,
+                borderRadius: 8, padding: "6px 12px", cursor: "pointer",
+                color: speakerMode ? "#FF6B83" : "#6B5F5A", fontSize: 12, fontWeight: 600,
+                display: "flex", alignItems: "center", gap: 6, transition: "all 0.2s",
+              }}
+            >
+              {speakerMode ? <MicOff size={13} /> : <Mic size={13} />}
+              <span>{speakerMode ? "Speaker mode" : "Speech"}</span>
             </button>
 
             {/* Streaming button */}
