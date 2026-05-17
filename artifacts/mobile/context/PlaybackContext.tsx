@@ -36,15 +36,7 @@ function getReasonFromStatus(status: AVPlaybackStatus): string {
     : "This song preview could not be played.";
 }
 
-function getPlaybackLoadingLabel(song: Song, playbackMode: PlaybackMode): string {
-  if (playbackMode === "full_when_available" && song.audioUrl?.trim()) {
-    return "Loading full track";
-  }
-
-  if (song.previewUrl?.trim()) {
-    return "Loading preview";
-  }
-
+function getPlaybackLoadingLabel(_song: Song, _playbackMode: PlaybackMode): string {
   return "Looking up preview";
 }
 
@@ -199,10 +191,7 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
         resetPlaybackState();
         return {
           ok: false,
-          reason:
-            preferences.playbackMode === "full_when_available"
-              ? "No in-app audio is available for this song yet."
-              : "No in-app preview is available for this song yet.",
+          reason: "No in-app preview is available for this song yet.",
         };
       }
 
@@ -250,10 +239,7 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
       await stopPlayback();
       return {
         ok: false,
-        reason:
-          preferences.playbackMode === "full_when_available"
-            ? "Could not start the in-app audio right now."
-            : "Could not start the in-app preview right now.",
+        reason: "Could not start the in-app preview right now.",
       };
     }
   }, [

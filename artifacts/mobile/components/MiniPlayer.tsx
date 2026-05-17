@@ -5,6 +5,7 @@ import React, { useMemo } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import * as Linking from "expo-linking";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useAlbumArt } from "@/lib/album-art";
 import { usePlayback } from "@/context/PlaybackContext";
 import { useTheme, type AppTheme } from "@/context/ThemeContext";
 
@@ -43,8 +44,11 @@ export function MiniPlayer() {
   }
 
   const progress = durationMs > 0 ? Math.min(1, positionMs / durationMs) : 0;
+  const albumArtUri = useAlbumArt(currentSong.artist, currentSong.title);
   const artworkUri =
-    currentArtworkUrl || `https://img.youtube.com/vi/${currentSong.youtubeVideoId}/hqdefault.jpg`;
+    currentArtworkUrl ||
+    albumArtUri ||
+    `https://img.youtube.com/vi/${currentSong.youtubeVideoId}/hqdefault.jpg`;
   const canToggle = status === "playing" || status === "paused";
 
   return (

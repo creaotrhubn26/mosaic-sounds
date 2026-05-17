@@ -19,6 +19,7 @@ import Animated2, {
   withTiming,
 } from "react-native-reanimated";
 import { Song, getSongMeta, formatDuration } from "@/constants/data";
+import { useAlbumArt } from "@/lib/album-art";
 import { useApp } from "@/context/AppContext";
 import { usePlayback } from "@/context/PlaybackContext";
 import { useTheme, type AppTheme } from "@/context/ThemeContext";
@@ -220,7 +221,10 @@ export function SongCard({
   };
 
   const [thumbError, setThumbError] = useState(false);
-  const thumbnailUri = `https://img.youtube.com/vi/${song.youtubeVideoId}/hqdefault.jpg`;
+  const albumArtUri = useAlbumArt(song.artist, song.title);
+  // Prefer the iTunes album cover (cached server-side, refetched here) and fall back to
+  // YouTube's hqdefault if iTunes has nothing for this (artist, title).
+  const thumbnailUri = albumArtUri ?? `https://img.youtube.com/vi/${song.youtubeVideoId}/hqdefault.jpg`;
   const shouldLoadThumbnail = loadThumbnail && !thumbError;
   const thumbFallbackBg =
     song.energyScore >= 72 ? "#3D0A12" :

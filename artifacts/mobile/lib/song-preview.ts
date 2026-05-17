@@ -40,19 +40,6 @@ export async function resolveSongAudioSource(
   song: Song,
   playbackMode: PlaybackMode = "preview_only",
 ): Promise<ResolvedSongAudioSource | null> {
-  const fullTrack = song.audioUrl?.trim()
-    ? {
-        url: song.audioUrl.trim(),
-        artworkUrl: song.artworkUrl?.trim() || null,
-        durationMs: null,
-        label: "Full track",
-      }
-    : null;
-
-  if (playbackMode === "full_when_available" && fullTrack) {
-    return fullTrack;
-  }
-
   if (playbackMode === "youtube") {
     return null;
   }

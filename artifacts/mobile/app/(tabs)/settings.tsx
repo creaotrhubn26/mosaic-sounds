@@ -38,7 +38,6 @@ const ACCENT_COLORS = [
 
 const PLAYBACK_OPTIONS: { id: PlaybackMode; label: string; hint: string }[] = [
   { id: "preview_only", label: "Preview", hint: "Always use in-app previews when available." },
-  { id: "full_when_available", label: "Full Song", hint: "Use the full track only when a direct audio source exists." },
   { id: "youtube", label: "YouTube", hint: "Skip in-app playback and open YouTube instead." },
 ];
 

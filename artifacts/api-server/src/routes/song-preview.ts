@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { resolveSongPreview } from "../lib/song-preview";
+import { PreviewRateLimitError, resolveSongPreview } from "../lib/song-preview";
 
 const router: IRouter = Router();
 
@@ -8,13 +8,14 @@ router.get("/song-preview", async (req, res) => {
   const artist = typeof req.query.artist === "string" ? req.query.artist.trim() : "";
 
   if (!title) {
-    return res.status(400).json({ error: "Song title is required" });
+    res.status(400).json({ error: "Song title is required" });
+    return;
   }
 
   try {
     const preview = await resolveSongPreview({ title, artist });
     if (!preview) {
-      return res.json({
+      res.json({
         previewUrl: null,
         artworkUrl: null,
         durationMs: null,
@@ -22,12 +23,20 @@ router.get("/song-preview", async (req, res) => {
         matchedArtist: null,
         confidence: null,
       });
+      return;
     }
 
-    return res.json(preview);
+    res.json(preview);
   } catch (error) {
+    if (error instanceof PreviewRateLimitError) {
+      // Tell the client iTunes is rate-limiting us so it can retry later instead of
+      // treating this as a permanent failure.
+      res.set("Retry-After", "30");
+      res.status(503).json({ error: "Preview lookup temporarily unavailable, retry shortly" });
+      return;
+    }
     req.log.warn({ error, title, artist }, "Could not resolve song preview");
-    return res.status(502).json({ error: "Could not resolve song preview" });
+    res.status(502).json({ error: "Could not resolve song preview" });
   }
 });
 

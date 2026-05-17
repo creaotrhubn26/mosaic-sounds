@@ -64,9 +64,53 @@ export const youtubeConnectionsTable = mosaicBeatsSchema.table(
   }),
 );
 
+// cache_key is sha256(lower(normalize(artist) + "|" + normalize(title))). null artwork_url
+// is cached too (so we don't re-hit iTunes for unknown songs every request) — refreshed when
+// fetched_at exceeds the configured TTL.
+export const albumArtCacheTable = mosaicBeatsSchema.table(
+  "album_art_cache",
+  {
+    cacheKey: text("cache_key").primaryKey(),
+    artist: text("artist").notNull(),
+    title: text("title").notNull(),
+    artworkUrl: text("artwork_url"),
+    source: text("source").notNull(),
+    fetchedAt: timestamp("fetched_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    fetchedAtIdx: index("album_art_cache_fetched_at_idx").on(table.fetchedAt),
+  }),
+);
+
+// 30-sec preview from iTunes. cache_key = sha256(normalize(title) + "|" + normalize(artist)).
+// preview_url null = iTunes had no match. confidence reflects fuzzy match quality.
+export const songPreviewCacheTable = mosaicBeatsSchema.table(
+  "song_preview_cache",
+  {
+    cacheKey: text("cache_key").primaryKey(),
+    title: text("title").notNull(),
+    artist: text("artist"),
+    previewUrl: text("preview_url"),
+    artworkUrl: text("artwork_url"),
+    durationMs: integer("duration_ms"),
+    matchedTitle: text("matched_title"),
+    matchedArtist: text("matched_artist"),
+    confidence: text("confidence"),
+    source: text("source").notNull(),
+    fetchedAt: timestamp("fetched_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    fetchedAtIdx: index("song_preview_cache_fetched_at_idx").on(table.fetchedAt),
+  }),
+);
+
 export type ClientProfile = typeof clientProfilesTable.$inferSelect;
 export type InsertClientProfile = typeof clientProfilesTable.$inferInsert;
 export type AccountProfile = typeof accountProfilesTable.$inferSelect;
 export type InsertAccountProfile = typeof accountProfilesTable.$inferInsert;
 export type YouTubeConnection = typeof youtubeConnectionsTable.$inferSelect;
 export type InsertYouTubeConnection = typeof youtubeConnectionsTable.$inferInsert;
+export type AlbumArtCache = typeof albumArtCacheTable.$inferSelect;
+export type InsertAlbumArtCache = typeof albumArtCacheTable.$inferInsert;
+export type SongPreviewCache = typeof songPreviewCacheTable.$inferSelect;
+export type InsertSongPreviewCache = typeof songPreviewCacheTable.$inferInsert;

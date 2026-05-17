@@ -25,7 +25,7 @@ export const LEGACY_STORAGE_KEYS = {
 
 export type AvoidEntry = { songId: string; note: string; addedAt: string };
 export type RequestEntry = { songId: string; note: string; addedAt: string };
-export type PlaybackMode = "preview_only" | "full_when_available" | "youtube";
+export type PlaybackMode = "preview_only" | "youtube";
 
 export type UserPreferences = {
   cultures: string[];
@@ -285,11 +285,11 @@ function normalizePreferences(value: unknown): UserPreferences {
         ? input.collapseUnplanned
         : defaultPreferences.collapseUnplanned,
     playbackMode:
-      input.playbackMode === "preview_only" ||
-      input.playbackMode === "full_when_available" ||
-      input.playbackMode === "youtube"
+      input.playbackMode === "preview_only" || input.playbackMode === "youtube"
         ? input.playbackMode
-        : defaultPreferences.playbackMode,
+        : input.playbackMode === "full_when_available"
+          ? ("preview_only" as const) // legacy value migrated
+          : defaultPreferences.playbackMode,
     languageMix: asObject<Record<string, number>>(input.languageMix, {}),
     appLanguage:
       input.appLanguage === "en" || input.appLanguage === "nb"
