@@ -38,6 +38,21 @@ export type {
 } from "@/lib/profile-state";
 
 const SEARCH_HISTORY_LIMIT = 8;
+const STATE_DRAFT_KEY = "@mosaicbeats_state_draft_v1";
+
+type StoredDraft = { state: AppProfileState; savedAt: number };
+
+async function loadStateDraft(): Promise<StoredDraft | null> {
+  try {
+    const raw = await AsyncStorage.getItem(STATE_DRAFT_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as StoredDraft;
+    if (!parsed?.state || typeof parsed.savedAt !== "number") return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
 
 type AppContextType = {
   clientId: string | null;
@@ -341,6 +356,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setSearchHistoryState(nextState.ui.searchHistory);
     setOnboardingDraftStepState(nextState.ui.onboardingDraftStep);
     setAISuggestionsMetaState(nextState.ui.aiSuggestionsMeta);
+    // Mirror to AsyncStorage immediately so a crash mid-edit doesn't lose work.
+    // The remote sync (persistNow) can take hundreds of ms and may fail; the local
+    // copy is the safety net that bootstrap can pick up on next launch.
+    void AsyncStorage.setItem(
+      STATE_DRAFT_KEY,
+      JSON.stringify({ state: nextState, savedAt: Date.now() }),
+    ).catch(() => undefined);
   }, []);
 
   const persistNow = useCallback(async (nextState: AppProfileState) => {
@@ -394,6 +416,36 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  // Schedule (or reschedule / cancel) the "day before event" reminder whenever the user
+  // adds, edits, or clears the event date. Fires noon local time the day before.
+  useEffect(() => {
+    if (!isLoaded) return;
+    const dateStr = preferences.weddingDate;
+    void (async () => {
+      const { cancelAllEventReminders, scheduleEventDayBeforeReminder } = await import("@/lib/push-notifications");
+      if (!dateStr) {
+        await cancelAllEventReminders();
+        return;
+      }
+      const labelByEvent: Record<string, string> = {
+        wedding: "Your wedding",
+        birthday: "Your birthday party",
+        corporate: "Your event",
+        party: "Your party",
+        mehendi: "Your Mehendi",
+        sangeet: "Your Sangeet",
+        nikkah: "Your Nikkah",
+        sweet16: "Your Sweet 16",
+        graduation: "Your graduation party",
+      };
+      const eventLabel = labelByEvent[preferences.eventType ?? "wedding"] ?? "Your event";
+      await scheduleEventDayBeforeReminder(dateStr, {
+        eventLabel,
+        setCount: appStateRef.current.sets.length,
+      });
+    })();
+  }, [isLoaded, preferences.weddingDate, preferences.eventType]);
+
   useEffect(() => {
     if (!isClerkLoaded || hasBootstrapped.current) return;
     hasBootstrapped.current = true;
@@ -425,11 +477,34 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           await persistNow(initialState);
           await clearLegacyLocalState();
         }
+
+        // Crash-recovery: if the local draft has work the remote doesn't (last app session
+        // crashed before the remote write completed), prefer the local draft. We trust the
+        // local copy when (a) it's meaningful and (b) it has more sets / likes / etc. than
+        // what came back from the server.
+        const draft = await loadStateDraft();
+        if (
+          draft &&
+          isProfileStateMeaningful(draft.state) &&
+          (draft.state.sets.length > initialState.sets.length ||
+            draft.state.likedSongIds.length > initialState.likedSongIds.length ||
+            draft.state.customSongs.length > initialState.customSongs.length)
+        ) {
+          console.log("[AppContext] Recovering local draft from", new Date(draft.savedAt).toISOString());
+          initialState = draft.state;
+          // Push the recovered state up to the server so subsequent devices see it too.
+          await persistNow(initialState).catch(() => undefined);
+        }
       } catch (error) {
         console.error("[AppContext] Bootstrap failed:", error);
         const legacyState = await loadLegacyLocalState();
         if (legacyState) {
           initialState = legacyState;
+        }
+        // Last-ditch: if even the bootstrap path threw, try the local draft.
+        const draft = await loadStateDraft();
+        if (draft && isProfileStateMeaningful(draft.state)) {
+          initialState = draft.state;
         }
       } finally {
         if (!isMounted.current) return;

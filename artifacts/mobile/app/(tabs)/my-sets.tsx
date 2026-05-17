@@ -20,6 +20,7 @@ import Animated, { FadeIn, FadeOut, Layout } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { WEDDING_MOMENTS } from "@/constants/data";
 import { useApp, WeddingSet } from "@/context/AppContext";
+import { FeatureSpotlight } from "@/components/ui/FeatureSpotlight";
 import { useTheme, type AppTheme } from "@/context/ThemeContext";
 import { useBreakpoints } from "@/lib/layout";
 
@@ -192,6 +193,12 @@ export default function MySetsScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
+      <FeatureSpotlight
+        featureKey="my-sets-intro"
+        icon="layers"
+        title="Your sets live here"
+        body="Each set is a moment in your event — first dance, baraat, cocktail hour. Long-press a set to duplicate or delete; swipe songs to remove. Tap Share on any set to send it to your DJ."
+      />
       <LinearGradient colors={[`${theme.gold}12`, "transparent"]} style={styles.headerGlow} />
 
       <FlatList

@@ -1078,12 +1078,37 @@ export default function SetDetailScreen() {
             <View style={styles.modalHandle} />
             <Text style={styles.modalTitle}>Guest Voting QR</Text>
             <Text style={[styles.storyModalSub, { textAlign: "center" }]}>
-              Show this QR code to guests — they can scan to see the setlist and share their favourites.
+              Scan with another phone to import the full set — no DJ Dashboard or internet needed.
             </Text>
             <View style={styles.qrContainer}>
               {QRCode ? (
                 <QRCode
-                  value={set ? buildShareText("standard").slice(0, 500) || `Mosaic Beats — ${set.name}` : "Mosaic Beats"}
+                  value={set ? (() => {
+                    // Encode the whole set as a base64 payload and embed in a mosaicbeats://
+                    // deep link. Anyone with the app installed can scan and import the set
+                    // offline. We keep it under the ~2.9KB QR Code Version 40 alphanumeric
+                    // limit by stripping fields we can re-derive (artworkUrl, etc.).
+                    const trimmed = {
+                      n: set.name,
+                      m: set.moment,
+                      c: set.color,
+                      s: set.songs.map((sg) => ({
+                        i: sg.id,
+                        t: sg.title,
+                        a: sg.artist,
+                        y: getYouTubeVideoId(sg),
+                        e: sg.energyScore,
+                        d: sg.dholScore,
+                        b: sg.bpmRange,
+                      })),
+                      o: set.songNotes,
+                    };
+                    const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(trimmed))));
+                    // Use ?d= rather than #fragment so Expo Router can read it via
+                    // useLocalSearchParams. URL-safe base64 keeps QR alphanumeric mode happy.
+                    const urlSafe = b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+                    return `mosaicbeats://set/import?d=${urlSafe}`;
+                  })() : "mosaicbeats://"}
                   size={220}
                   color={theme.text}
                   backgroundColor={theme.card}
@@ -1101,7 +1126,7 @@ export default function SetDetailScreen() {
             </View>
             <Pressable onPress={() => { Share.share({ message: buildShareText("standard") }); }} style={[styles.storyShareBtn, { backgroundColor: "#9B59B6" }]}>
               <Feather name="share-2" size={18} color="#FFFFFF" />
-              <Text style={styles.storyShareBtnText}>Share Setlist Text</Text>
+              <Text style={styles.storyShareBtnText}>Share as text instead</Text>
             </Pressable>
             <Pressable onPress={() => setShowQRModal(false)} style={styles.cancelBtn}>
               <Text style={styles.cancelText}>Close</Text>

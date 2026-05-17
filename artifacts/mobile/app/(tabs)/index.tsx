@@ -19,6 +19,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { WEDDING_MOMENTS, getMomentsForEventType, type WeddingMoment } from "@/constants/data";
 import { useApp } from "@/context/AppContext";
 import { useTheme, type AppTheme } from "@/context/ThemeContext";
+import { FeatureSpotlight } from "@/components/ui/FeatureSpotlight";
 import { useBreakpoints } from "@/lib/layout";
 import { useLazyMomentImages } from "@/lib/lazy-moment-images";
 import { MomentCard } from "@/components/MomentCard";
@@ -543,6 +544,12 @@ export default function MomentsScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
+      <FeatureSpotlight
+        featureKey="home-intro"
+        icon="grid"
+        title="Every card is a moment"
+        body="Tap any moment — first dance, baraat, cocktail hour — to start building its playlist. Sets you build here flow automatically to your DJ when you share."
+      />
       <LinearGradient
         colors={[`${theme.accent}18`, "transparent"]}
         style={styles.headerGlow}

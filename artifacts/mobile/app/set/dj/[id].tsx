@@ -23,6 +23,7 @@ import { WEDDING_MOMENTS } from "@/constants/data";
 import { useApp } from "@/context/AppContext";
 import { usePlayback } from "@/context/PlaybackContext";
 import { getYouTubeVideoId } from "@/lib/song-overrides";
+import { FeatureSpotlight } from "@/components/ui/FeatureSpotlight";
 import { EnergyBar } from "@/components/ui/EnergyBar";
 
 const BG = "#080304";
@@ -131,6 +132,13 @@ export default function DJModeScreen() {
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <StatusBar barStyle="light-content" backgroundColor={BG} />
+
+      <FeatureSpotlight
+        featureKey="dj-mode-intro"
+        icon="headphones"
+        title="DJ mode"
+        body="Full-screen view for live performance. Swipe left or right to navigate tracks, see BPM and energy at a glance, and tap a song's YouTube link when you're ready. Tap anywhere on the timer to start it."
+      />
 
       <View style={styles.topBar}>
         <Pressable onPress={() => router.back()} style={styles.exitBtn}>
