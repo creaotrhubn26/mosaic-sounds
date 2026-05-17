@@ -13,9 +13,17 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
-import Animated, { FadeInRight, FadeOutLeft } from "react-native-reanimated";
+import Animated, {
+  FadeInDown,
+  FadeInRight,
+  FadeOutLeft,
+  FadeOutUp,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { CULTURES, LANGUAGES, WEDDING_MOMENTS } from "@/constants/data";
+import { CULTURES, LANGUAGES, WEDDING_MOMENTS, getMomentsForEventType } from "@/constants/data";
 import type { EventType } from "@/constants/data";
 import { getCultureImage } from "@/constants/cultureImages";
 import { getT } from "@/constants/i18n";
@@ -133,6 +141,37 @@ export default function OnboardingScreen() {
 
   const progressSteps = isWedding ? 5 : 2;
   const progressIndex = isWedding ? step : (step === 0 ? 0 : 1);
+  const progressFraction = (progressIndex + 1) / progressSteps;
+
+  // Smoothly animate the fill width as the user advances. The shared value persists
+  // across renders so reverses also animate (not just forward).
+  const progressWidth = useSharedValue(progressFraction);
+  useEffect(() => {
+    progressWidth.value = withTiming(progressFraction, { duration: 340 });
+  }, [progressFraction, progressWidth]);
+  const animatedProgressStyle = useAnimatedStyle(() => ({
+    width: `${progressWidth.value * 100}%`,
+  }));
+
+  // "Welcome back" banner appears once when the user resumes a draft session.
+  const [showResumedBanner, setShowResumedBanner] = useState(false);
+  useEffect(() => {
+    if (typeof onboardingDraftStep === "number" && onboardingDraftStep > 0 && step === 0) {
+      // We're about to jump to a later step (handled by the other effect). Surface the banner.
+      setShowResumedBanner(true);
+      const t = setTimeout(() => setShowResumedBanner(false), 4500);
+      return () => clearTimeout(t);
+    }
+    return undefined;
+    // Only run once on mount: don't depend on step changes after.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Show how many sets will be auto-built when the event type changes.
+  const setsToBuild = useMemo(
+    () => getMomentsForEventType(eventType).length,
+    [eventType],
+  );
 
   const toggleCulture = (id: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -209,11 +248,30 @@ export default function OnboardingScreen() {
   return (
     <LinearGradient colors={[theme.bg, theme.isDark ? "#1A0508" : "#FFF0EC"]} style={styles.container}>
       <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
-        <View style={styles.progressBar}>
-          {Array.from({ length: progressSteps }).map((_, i) => (
-            <View key={i} style={[styles.progressStep, { backgroundColor: i <= progressIndex ? theme.accent : theme.border }]} />
-          ))}
+        <View style={styles.progressTrack}>
+          <Animated.View
+            style={[
+              styles.progressFill,
+              { backgroundColor: theme.accent },
+              animatedProgressStyle,
+            ]}
+          />
         </View>
+        <Text style={styles.progressLabel}>
+          Step {progressIndex + 1} of {progressSteps}
+        </Text>
+        {showResumedBanner && (
+          <Animated.View
+            entering={FadeInDown.duration(280)}
+            exiting={FadeOutUp.duration(220)}
+            style={[styles.resumedBanner, { borderColor: `${theme.gold}40`, backgroundColor: `${theme.gold}12` }]}
+          >
+            <Feather name="bookmark" size={14} color={theme.gold} />
+            <Text style={[styles.resumedBannerText, { color: theme.text }]} numberOfLines={1}>
+              Welcome back — picking up where you left off
+            </Text>
+          </Animated.View>
+        )}
         {step > 0 && (
           <Pressable onPress={handleBack} style={styles.backBtn}>
             <Feather name="arrow-left" size={22} color={theme.text} />
@@ -236,6 +294,13 @@ export default function OnboardingScreen() {
             <>
               <Text style={styles.stepTitle}>{t.onboarding.step0Title}</Text>
               <Text style={styles.stepSubtitle}>{t.onboarding.step0Sub}</Text>
+              <View style={[styles.estimateChip, { borderColor: `${theme.gold}40`, backgroundColor: `${theme.gold}10` }]}>
+                <Feather name="layers" size={13} color={theme.gold} />
+                <Text style={[styles.estimateChipText, { color: theme.text }]} numberOfLines={1}>
+                  We'll auto-build <Text style={{ color: theme.gold }}>{setsToBuild}</Text>{" "}
+                  starter set{setsToBuild === 1 ? "" : "s"} for this event
+                </Text>
+              </View>
               <View style={styles.eventGrid}>
                 {ALL_EVENT_IDS.map((evId) => {
                   const selected = eventType === evId;
@@ -493,8 +558,33 @@ function makeStyles(t: AppTheme) {
   return StyleSheet.create({
     container: { flex: 1 },
     header: { paddingHorizontal: 24, paddingBottom: 16 },
-    progressBar: { flexDirection: "row" as const, gap: 6, marginBottom: 8 },
-    progressStep: { flex: 1, height: 4, borderRadius: 2 },
+    progressTrack: { height: 4, borderRadius: 2, backgroundColor: t.border, overflow: "hidden" as const, marginBottom: 6 },
+    progressFill: { height: 4, borderRadius: 2 },
+    progressLabel: { color: t.muted, fontFamily: "Poppins_500Medium", fontSize: 11, letterSpacing: 0.4 },
+    resumedBanner: {
+      flexDirection: "row" as const,
+      alignItems: "center" as const,
+      gap: 8,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      borderRadius: 10,
+      borderWidth: 1,
+      marginTop: 12,
+    },
+    resumedBannerText: { flex: 1, fontFamily: "Poppins_500Medium", fontSize: 12 },
+    estimateChip: {
+      flexDirection: "row" as const,
+      alignItems: "center" as const,
+      gap: 8,
+      alignSelf: "flex-start" as const,
+      paddingHorizontal: 12,
+      paddingVertical: 7,
+      borderRadius: 999,
+      borderWidth: 1,
+      marginTop: -4,
+      marginBottom: 14,
+    },
+    estimateChipText: { fontFamily: "Poppins_500Medium", fontSize: 12 },
     backBtn: { marginTop: 8, width: 40, height: 40, alignItems: "center" as const, justifyContent: "center" as const },
     scroll: { paddingHorizontal: 24 },
     stepContent: { gap: 20 },

@@ -225,7 +225,10 @@ export function SongCard({
   const albumArtUri = useAlbumArt(song.artist, song.title);
   // Prefer the iTunes album cover (cached server-side, refetched here) and fall back to
   // YouTube's hqdefault if iTunes has nothing for this (artist, title).
-  const thumbnailUri = albumArtUri ?? `https://img.youtube.com/vi/${getYouTubeVideoId(song)}/hqdefault.jpg`;
+  // Grid view renders these at ~80px square; 300×300 is more than enough and saves
+  // ~75% of the image bytes vs the cached 600×600 source.
+  const smallAlbumArt = albumArtUri ? albumArtUri.replace(/\/600x600bb\./, "/300x300bb.") : null;
+  const thumbnailUri = smallAlbumArt ?? `https://img.youtube.com/vi/${getYouTubeVideoId(song)}/mqdefault.jpg`;
   const shouldLoadThumbnail = loadThumbnail && !thumbError;
   const thumbFallbackBg =
     song.energyScore >= 72 ? "#3D0A12" :

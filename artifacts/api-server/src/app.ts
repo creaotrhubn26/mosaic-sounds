@@ -68,4 +68,48 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use("/api", router);
 
+// Friendly root response so people poking the deployment URL in a browser see
+// something useful instead of "Cannot GET /".
+app.get("/", (_req, res) => {
+  res.type("html").send(`<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Mosaic Beats API</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif; background: #0F0708; color: #FAF0E6; margin: 0; padding: 48px 24px; max-width: 720px; margin-inline: auto; }
+    h1 { color: #D4A017; font-weight: 600; margin: 0 0 8px; }
+    p { color: #B8A89E; margin: 0 0 24px; }
+    h2 { color: #FAF0E6; font-size: 14px; text-transform: uppercase; letter-spacing: 0.06em; margin: 32px 0 12px; }
+    ul { list-style: none; padding: 0; margin: 0; }
+    li { padding: 10px 14px; background: #1A0B0C; border-radius: 8px; margin-bottom: 6px; font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13px; }
+    .method { display: inline-block; min-width: 48px; color: #D4A017; }
+  </style>
+</head>
+<body>
+  <h1>Mosaic Beats API</h1>
+  <p>Backend for the Mosaic Beats mobile + DJ Dashboard apps. This URL is not meant to be browsed directly.</p>
+
+  <h2>Public endpoints</h2>
+  <ul>
+    <li><span class="method">GET</span> /api/healthz</li>
+    <li><span class="method">GET</span> /api/album-art?artist=&amp;title=</li>
+    <li><span class="method">GET</span> /api/song-preview?title=&amp;artist=</li>
+    <li><span class="method">GET</span> /api/song-overrides</li>
+  </ul>
+
+  <h2>Auth-gated</h2>
+  <ul>
+    <li><span class="method">GET</span> /api/auth/session</li>
+    <li><span class="method">POST</span> /api/auth/sync</li>
+    <li><span class="method">GET/PUT</span> /api/app-state</li>
+    <li><span class="method">GET</span> /api/youtube/status</li>
+    <li><span class="method">POST</span> /api/youtube/start</li>
+    <li><span class="method">POST</span> /api/youtube/playlists</li>
+  </ul>
+</body>
+</html>`);
+});
+
 export default app;

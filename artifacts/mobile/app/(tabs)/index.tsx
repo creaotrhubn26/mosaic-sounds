@@ -25,22 +25,22 @@ import { MomentCard } from "@/components/MomentCard";
 import { ShimmerMomentCard } from "@/components/ui/ShimmerCard";
 import { ConfettiOverlay } from "@/components/ConfettiOverlay";
 
-function WeddingCountdown({ dateStr, coupleNames }: { dateStr: string; coupleNames?: string }) {
+function EventCountdown({ dateStr, headlineLabel }: { dateStr: string; headlineLabel?: string }) {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const days = useMemo(() => {
-    const wedding = new Date(dateStr);
+    const event = new Date(dateStr);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    wedding.setHours(0, 0, 0, 0);
-    return Math.ceil((wedding.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    event.setHours(0, 0, 0, 0);
+    return Math.ceil((event.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
   }, [dateStr]);
 
   if (days < 0) return null;
 
   const urgency = days === 0 ? theme.accent : days <= 7 ? theme.accent : days <= 30 ? theme.gold : theme.textSecondary;
   const daysLabel = days === 0 ? "Today is the day!" : days === 1 ? "Tomorrow!" : `${days} days to go`;
-  const headline = coupleNames ? `${coupleNames} · ${daysLabel}` : daysLabel;
+  const headline = headlineLabel ? `${headlineLabel} · ${daysLabel}` : daysLabel;
 
   return (
     <LinearGradient
@@ -452,14 +452,21 @@ export default function MomentsScreen() {
           </View>
         </View>
 
-        {(!preferences.eventType || preferences.eventType === "wedding") && preferences.weddingDate && (
-          <WeddingCountdown dateStr={preferences.weddingDate} coupleNames={preferences.coupleNames} />
+        {preferences.weddingDate && (
+          <EventCountdown
+            dateStr={preferences.weddingDate}
+            headlineLabel={
+              preferences.eventType === "wedding" || !preferences.eventType
+                ? preferences.coupleNames
+                : undefined
+            }
+          />
         )}
 
-        {(!preferences.eventType || preferences.eventType === "wedding") && !preferences.weddingDate && (
+        {!preferences.weddingDate && (
           <Pressable style={styles.setDateBanner} onPress={() => router.push("/(tabs)/settings")}>
             <Feather name="calendar" size={15} color={theme.gold} />
-            <Text style={styles.setDateText}>Set your wedding date for a countdown</Text>
+            <Text style={styles.setDateText}>Set your event date for a countdown</Text>
             <Feather name="chevron-right" size={15} color={theme.muted} />
           </Pressable>
         )}

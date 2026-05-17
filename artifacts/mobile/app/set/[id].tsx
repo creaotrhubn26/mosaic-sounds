@@ -5,7 +5,7 @@ import * as Linking from "expo-linking";
 import * as Print from "expo-print";
 import { router, useLocalSearchParams } from "expo-router";
 import * as Sharing from "expo-sharing";
-import React, { useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import BpmTapper from "@/components/BpmTapper";
 import {
   Alert,
@@ -56,6 +56,7 @@ import { WEDDING_MOMENTS, SONG_META } from "@/constants/data";
 import type { Song } from "@/constants/data";
 import { useApp } from "@/context/AppContext";
 import { getYouTubeVideoId } from "@/lib/song-overrides";
+import { Snackbar } from "@/components/ui/Snackbar";
 import { usePlayback } from "@/context/PlaybackContext";
 import { useTheme, type AppTheme } from "@/context/ThemeContext";
 import {
@@ -99,6 +100,7 @@ export default function SetDetailScreen() {
     preferences,
     isAuthenticated,
     getToken,
+    addSongToSet,
     removeSongFromSet,
     reorderSongsInSet,
     updateSongNote,
@@ -129,6 +131,31 @@ export default function SetDetailScreen() {
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const [brokenSong, setBrokenSong] = useState<Song | null>(null);
   const [showAlternatives, setShowAlternatives] = useState(false);
+
+  // Snackbar state — "Removed X" with Undo, thumbnail of the removed song.
+  const [undoSnackbar, setUndoSnackbar] = useState<{
+    visible: boolean;
+    song: Song | null;
+    originalIndex: number;
+    thumbnailUri: string | null;
+  }>({ visible: false, song: null, originalIndex: -1, thumbnailUri: null });
+
+  // Auto-scroll: when the set grows, scroll to the newly-added (last) song.
+  const songListRef = useRef<FlatList<Song>>(null);
+  const prevLengthRef = useRef<number>(set?.songs.length ?? 0);
+  useEffect(() => {
+    const len = set?.songs.length ?? 0;
+    if (len > prevLengthRef.current) {
+      // small delay lets layout settle before scrolling
+      const t = setTimeout(() => {
+        songListRef.current?.scrollToIndex({ index: len - 1, animated: true, viewPosition: 0.4 });
+      }, 120);
+      prevLengthRef.current = len;
+      return () => clearTimeout(t);
+    }
+    prevLengthRef.current = len;
+    return undefined;
+  }, [set?.songs.length]);
 
   const handleAutoEnergySort = () => {
     if (!set || set.songs.length < 2) return;
@@ -249,7 +276,14 @@ export default function SetDetailScreen() {
   const handleShare = async (format: "standard" | "whatsapp" | "dj" = "standard") => {
     if (!set) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    await Share.share({ message: buildShareText(format) });
+    try {
+      const result = await Share.share({ message: buildShareText(format) });
+      if (result.action === Share.sharedAction) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+    } catch {
+      // Share dismissed or failed silently — no haptic.
+    }
   };
 
   const handleCaptureStoryCard = async () => {
@@ -411,10 +445,41 @@ export default function SetDetailScreen() {
   };
 
   const handleRemoveSong = (songId: string) => {
-    Alert.alert("Remove Song", "Remove this song from the set?", [
-      { text: "Cancel", style: "cancel" },
-      { text: "Remove", style: "destructive", onPress: () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); removeSongFromSet(id!, songId); } },
-    ]);
+    if (!set) return;
+    const idx = set.songs.findIndex((s) => s.id === songId);
+    const song = set.songs[idx];
+    if (!song) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    removeSongFromSet(id!, songId);
+    setUndoSnackbar({
+      visible: true,
+      song,
+      originalIndex: idx,
+      thumbnailUri: `https://img.youtube.com/vi/${getYouTubeVideoId(song)}/mqdefault.jpg`,
+    });
+  };
+
+  const handleUndoRemove = () => {
+    if (!undoSnackbar.song) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    // Re-add then reorder to original position.
+    addSongToSet(id!, undoSnackbar.song);
+    if (set && undoSnackbar.originalIndex >= 0 && undoSnackbar.originalIndex < set.songs.length + 1) {
+      // We can't perfectly restore order without inspecting the latest songs after the add,
+      // but we attempt to: pull the just-added song to the original index.
+      setTimeout(() => {
+        const current = sets.find((s) => s.id === id);
+        if (!current) return;
+        const target = undoSnackbar.song!;
+        const without = current.songs.filter((s) => s.id !== target.id);
+        const rebuilt = [
+          ...without.slice(0, undoSnackbar.originalIndex),
+          target,
+          ...without.slice(undoSnackbar.originalIndex),
+        ];
+        reorderSongsInSet(id!, rebuilt);
+      }, 60);
+    }
   };
 
   const moveUp = (index: number) => {
@@ -632,6 +697,7 @@ export default function SetDetailScreen() {
       )}
 
       <FlatList
+        ref={songListRef}
         data={set.songs}
         keyExtractor={(song) => song.id}
         renderItem={renderSetSong}
@@ -639,6 +705,10 @@ export default function SetDetailScreen() {
         maxToRenderPerBatch={10}
         windowSize={9}
         removeClippedSubviews={Platform.OS !== "web"}
+        onScrollToIndexFailed={(info) => {
+          // Item may not be measured yet — back off and try again.
+          setTimeout(() => songListRef.current?.scrollToIndex({ index: info.index, animated: true, viewPosition: 0.4 }), 200);
+        }}
         ItemSeparatorComponent={() => <View style={styles.songRowSpacer} />}
         ListHeaderComponent={
           <>
@@ -947,8 +1017,20 @@ export default function SetDetailScreen() {
                 renderItem={({ item, drag, isActive }: RenderItemParams<Song>) => (
                   <ScaleDecorator>
                     <View style={[styles.reorderRow, isActive && styles.reorderRowActive]}>
-                      <TouchableOpacity onLongPress={drag} hitSlop={8} activeOpacity={0.7}>
-                        <Feather name="menu" size={22} color={isActive ? theme.gold : theme.muted} />
+                      <TouchableOpacity
+                        onLongPress={drag}
+                        hitSlop={12}
+                        activeOpacity={0.6}
+                        style={{
+                          width: 36,
+                          height: 36,
+                          borderRadius: 8,
+                          backgroundColor: isActive ? `${theme.gold}25` : `${theme.gold}12`,
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <Feather name="align-justify" size={20} color={isActive ? theme.gold : `${theme.gold}AA`} />
                       </TouchableOpacity>
                       <View style={{ flex: 1 }}>
                         <Text style={styles.reorderTitle} numberOfLines={1}>{item.title}</Text>
@@ -1038,12 +1120,71 @@ export default function SetDetailScreen() {
         }}
         onClose={() => { setShowAlternatives(false); setBrokenSong(null); }}
       />
+
+      {/* Sticky bottom action bar — visible while in edit mode. Exits edit mode
+          after confirming. Edits are auto-saved continuously, so this is a
+          "Done" affordance rather than an explicit save. */}
+      {editMode && (
+        <View style={[styles.stickySaveBar, { paddingBottom: insets.bottom + 10 }]}>
+          <View style={styles.stickySaveInfo}>
+            <Feather name="edit-3" size={14} color={theme.gold} />
+            <Text style={styles.stickySaveLabel}>
+              Editing — changes save automatically
+            </Text>
+          </View>
+          <Pressable
+            onPress={() => {
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              setEditMode(false);
+            }}
+            style={({ pressed }) => [styles.stickySaveBtn, pressed && { opacity: 0.85 }]}
+          >
+            <Feather name="check" size={16} color="#FFFFFF" />
+            <Text style={styles.stickySaveBtnText}>Done</Text>
+          </Pressable>
+        </View>
+      )}
+
+      <Snackbar
+        visible={undoSnackbar.visible}
+        message={undoSnackbar.song ? `Removed "${undoSnackbar.song.title}"` : "Song removed"}
+        thumbnailUri={undoSnackbar.thumbnailUri ?? undefined}
+        actionLabel="Undo"
+        onAction={handleUndoRemove}
+        onDismiss={() => setUndoSnackbar((s) => ({ ...s, visible: false }))}
+      />
     </View>
   );
 }
 
 function makeStyles(t: AppTheme) {
   return StyleSheet.create({
+    stickySaveBar: {
+      position: "absolute" as const,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      flexDirection: "row" as const,
+      alignItems: "center" as const,
+      gap: 12,
+      paddingHorizontal: 16,
+      paddingTop: 12,
+      backgroundColor: t.card,
+      borderTopWidth: 1,
+      borderTopColor: t.border,
+    },
+    stickySaveInfo: { flex: 1, flexDirection: "row" as const, alignItems: "center" as const, gap: 6 },
+    stickySaveLabel: { color: t.textSecondary, fontFamily: "Poppins_500Medium", fontSize: 12 },
+    stickySaveBtn: {
+      flexDirection: "row" as const,
+      alignItems: "center" as const,
+      gap: 6,
+      paddingHorizontal: 18,
+      paddingVertical: 11,
+      borderRadius: 10,
+      backgroundColor: t.accent,
+    },
+    stickySaveBtnText: { color: "#FFFFFF", fontFamily: "Poppins_600SemiBold", fontSize: 14, letterSpacing: 0.3 },
     container: { flex: 1 },
     headerBg: { position: "absolute", top: 0, left: 0, right: 0 },
     header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 16, paddingBottom: 8 },
